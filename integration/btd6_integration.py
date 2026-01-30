@@ -140,6 +140,53 @@ class BTD6Integration:
 
         return best
 
+    def detect_game_window(self) -> Tuple[int, int, int, int]:
+        """
+        Detect (or assume) the game window region. For MVP we capture the full primary screen
+        and set that as the game region. Returns (x, y, width, height).
+        """
+        # Capture full screen via PIL
+        screenshot = ImageGrab.grab()
+        width, height = screenshot.size
+        # Use origin (0,0) for full-screen region
+        self.game_region = (0, 0, width, height)
+        return self.game_region
+
+    def place_towers_hotkeys(self, actions: List[dict]):
+        """
+        Place towers in the real game using hotkeys and clicks.
+
+        Args:
+            actions: List of dicts {'type': str, 'x': int, 'y': int} where x,y are
+                     pixel coordinates relative to the top-left of the game region.
+        """
+        for act in actions:
+            tower_type = act.get("type", "dart_monkey")
+            x = act.get("x")
+            y = act.get("y")
+            if x is None or y is None:
+                continue
+
+            # Press tower hotkey (MVP: dart monkey -> 'z')
+            if tower_type == "dart_monkey":
+                pyautogui.press("z")
+            else:
+                pyautogui.press("z")
+
+            # Wait for tower selection menu to appear (0.2s delay as specified)
+            time.sleep(0.2)
+
+            # Click at the target position (convert to absolute screen coords)
+            if self.game_region:
+                abs_x = int(self.game_region[0] + x)
+                abs_y = int(self.game_region[1] + y)
+            else:
+                abs_x = int(x)
+                abs_y = int(y)
+
+            self.click_at_position(abs_x, abs_y)
+            time.sleep(0.15)
+
     def detect_track_path(self, screen: np.ndarray) -> List[Tuple[int, int]]:
         """
         Detect track path from screenshot and return ordered polyline.

@@ -18,12 +18,15 @@ class GameState(Enum):
 class BTD6Game:
     """Main game engine"""
 
+    TOWER_COST = 1200  # Dart Monkey cost in standard BTD6
+    MIN_TRACK_DISTANCE = 40  # Minimum distance from track to place tower
+
     def __init__(
         self,
         width: int = 800,
         height: int = 600,
         starting_lives: int = 100,
-        starting_cash: int = 650,
+        starting_cash: int = 850,
     ):
         self.width = width
         self.height = height
@@ -76,10 +79,23 @@ class BTD6Game:
         if x < 0 or x > self.width or y < 0 or y > self.height:
             return False
 
+        # Check if enough cash
+        if self.cash < self.TOWER_COST:
+            return False
+
+        # Check tower collision
         for tower in self.towers:
             if tower.collides_with_point(pos):
                 return False
 
+        # Check distance from track (avoid placing on path)
+        for path_point in self.balloon_path:
+            dist = pos.distance_to(path_point)
+            if dist < self.MIN_TRACK_DISTANCE:
+                return False
+
+        # Deduct cost and place tower
+        self.cash -= self.TOWER_COST
         tower = Tower(pos)
         self.towers.append(tower)
         return True

@@ -105,6 +105,57 @@ def evaluate(model_path: str, episodes: int = 10, render: bool = True):
     env.close()
 
 
+def evaluate_model(model_path: str, episodes: int = 3, render: bool = False) -> dict:
+    """
+    Evaluate a trained model and return structured results useful for integration.
+
+    Returns a dict: {"wins": int, "episodes": int, "placements": List[List[Tuple[x,y]]], "average_reward": float}
+    Each inner placements list contains the (x,y) pixel placements taken in that episode.
+    """
+
+    env = BTD6Env(render_mode="human" if render else None)
+    model = PPO.load(model_path)
+
+    total_reward = 0.0
+    wins = 0
+    all_placements = []
+
+    for episode in range(episodes):
+        obs, _ = env.reset()
+        done = False
+        episode_reward = 0.0
+        episode_placements = []
+
+        while not done:
+            action, _ = model.predict(obs, deterministic=True)
+
+            # Decode action to (x,y) using environment grid resolution
+            if action < env.num_actions - 1:
+                tile_x = action % env.tiles_x
+                tile_y = action // env.tiles_x
+                x = int(tile_x * env.grid_resolution + env.grid_resolution // 2)
+                y = int(tile_y * env.grid_resolution + env.grid_resolution // 2)
+                episode_placements.append((x, y))
+
+            obs, reward, terminated, truncated, info = env.step(int(action))
+            episode_reward += reward
+            done = terminated or truncated
+
+        total_reward += episode_reward
+        all_placements.append(episode_placements)
+        if info.get("state") == "WON":
+            wins += 1
+
+    env.close()
+
+    return {
+        "wins": wins,
+        "episodes": episodes,
+        "placements": all_placements,
+        "average_reward": total_reward / episodes if episodes > 0 else 0.0,
+    }
+
+
 if __name__ == "__main__":
     import sys
 

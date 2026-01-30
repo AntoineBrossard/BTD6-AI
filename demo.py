@@ -4,11 +4,25 @@ Shows all 3 phases working together
 """
 
 import time
+import argparse
 
 print("=" * 60)
 print("BTD6-AI: Complete Demo")
 print("=" * 60)
 print()
+
+# CLI: allow running the MVP orchestrator directly
+parser = argparse.ArgumentParser(add_help=False)
+parser.add_argument("--mvp", action="store_true", help="Run MVP orchestrator (detect window, evaluate AI, place towers)")
+args, _ = parser.parse_known_args()
+
+if args.mvp:
+    # Import and run the orchestrator only when requested to avoid heavy imports by default
+    from run_mvp import main as run_mvp_main
+
+    print("Running MVP orchestrator (Monkey Meadows, easy)...")
+    run_mvp_main()
+    raise SystemExit(0)
 
 # Phase 1: Game Simulation Demo
 print("📊 PHASE 1: GAME SIMULATION")
